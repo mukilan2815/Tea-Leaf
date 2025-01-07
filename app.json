@@ -38,7 +38,14 @@
       "typedRoutes": true
     },
     "expo": {
-      "permissions": ["LOCATION", "CAMERA"]
+      "plugins": [
+        [
+          "expo-camera",
+          {
+            "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
+          }
+        ]
+      ]
     }
   }
 }
