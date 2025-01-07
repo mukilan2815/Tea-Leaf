@@ -1,109 +1,118 @@
-import { StyleSheet, Image, Platform } from 'react-native';
+import React from "react";
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+} from "react-native";
+import md5 from "md5";
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+const email = "johndoe@example.com";
+const gravatarUrl = `https://www.gravatar.com/avatar/${md5(email)}?d=identicon`;
 
-export default function TabTwoScreen() {
+export default function SettingsScreen() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
+    <ScrollView style={styles.container}>
+      {/* User Profile Section */}
+
+      <View style={styles.profileSection}>
+        <Image source={{ uri: gravatarUrl }} style={styles.profileImage} />
+        <View style={styles.profileDetails}>
+          <Text style={styles.profileName}>John Doe</Text>
+          <Text style={styles.profilePhone}>+1 234 567 890</Text>
+        </View>
+      </View>
+
+      {/* Settings List */}
+      <View style={styles.settingsList}>
+        <SettingsItem
+          title="Communities"
+          onPress={() => console.log("Communities")}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+        <SettingsItem
+          title="Drone Service"
+          onPress={() => console.log("Drone Service")}
+        />
+        <SettingsItem
+          title="Location"
+          onPress={() => console.log("Help and Support")}
+        />
+        <SettingsItem
+          title="Help and Support"
+          onPress={() => console.log("Help and Support")}
+        />
+      </View>
+    </ScrollView>
   );
 }
 
+interface SettingsItemProps {
+  title: string;
+  onPress: () => void;
+}
+
+const SettingsItem: React.FC<SettingsItemProps> = ({ title, onPress }) => (
+  <TouchableOpacity style={styles.settingsItem} onPress={onPress}>
+    <Text style={styles.itemText}>{title}</Text>
+    <Text style={styles.itemArrow}>›</Text>
+  </TouchableOpacity>
+);
+
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F5F5",
+    paddingHorizontal: 16,
+    paddingTop: 30,
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  profileSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    marginRight: 16,
+  },
+  profileDetails: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  profilePhone: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+  },
+  settingsList: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+  },
+  settingsItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  itemText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  itemArrow: {
+    fontSize: 18,
+    color: "#999",
   },
 });
