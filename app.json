@@ -36,6 +36,9 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "expo": {
+      "permissions": ["LOCATION", "CAMERA"]
     }
   }
 }
