@@ -28,7 +28,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     (async () => {
-      const { status } = await ExpoCamera.requestCameraPermissionsAsync();
+      const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === "granted");
     })();
   }, []);
@@ -123,8 +123,8 @@ export default function HomeScreen() {
 
       <Modal visible={cameraVisible} animationType="slide">
         <View style={styles.cameraContainer}>
-          {typeof ExpoCamera === "function" && hasPermission ? (
-            <ExpoCamera style={styles.camera} />
+          {Camera && hasPermission ? (
+            <Camera style={styles.camera} />
           ) : (
             <Text>Camera not available</Text>
           )}
