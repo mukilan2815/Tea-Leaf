@@ -10,8 +10,7 @@ import {
   TouchableOpacity,
   Modal,
 } from "react-native";
-import { Camera as ExpoCamera } from "expo-camera";
-
+import { Camera } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons"; // For the camera icon
 import md5 from "md5";
 
