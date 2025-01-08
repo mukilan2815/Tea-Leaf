@@ -1,0 +1,18 @@
+{
+    "welcome": "வரவேற்பு {{name}} !!",
+    "weather": "வானிலை",
+    "location": "இடம்",
+    "temperature": "{{temp}}°C - {{condition}}",
+    "reports": "அறிக்கைகள்",
+    "news": "சமீபத்திய செய்திகள்",
+    "switch_language": "மொழியை மாற்றவும்",
+    "help_support": "உதவி மற்றும் ஆதரவு",
+    "your_location": "உங்கள் இடம்",
+    "city": "நகரம்",
+    "state": "மாநிலம்",
+    "country": "நாடு",
+    "close": "மூடு",
+    "language_switched": "மொழி மாற்றப்பட்டது",
+    "current_language": "தற்போதைய மொழி: {{language}}"
+  }
+  

@@ -1,0 +1,18 @@
+{
+    "welcome": "Welcome {{name}} !!",
+    "weather": "Weather",
+    "location": "Location",
+    "temperature": "{{temp}}°C - {{condition}}",
+    "reports": "Reports",
+    "news": "Latest News",
+    "switch_language": "Switch Language",
+    "help_support": "Help and Support",
+    "your_location": "Your Location",
+    "city": "City",
+    "state": "State",
+    "country": "Country",
+    "close": "Close",
+    "language_switched": "Language Switched",
+    "current_language": "Current Language: {{language}}"
+  }
+  

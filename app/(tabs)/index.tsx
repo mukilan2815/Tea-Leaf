@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   StyleSheet,
   View,
@@ -7,39 +7,30 @@ import {
   Image,
   FlatList,
   Dimensions,
-  TouchableOpacity,
-  Modal,
 } from "react-native";
-import { Camera } from "expo-camera";
-import { Ionicons } from "@expo/vector-icons"; // For the camera icon
+import { useTranslation } from "react-i18next"; // Import useTranslation hook
 import md5 from "md5";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 export default function HomeScreen() {
+  const { t } = useTranslation(); // Initialize translation
   const email = "johndoe@example.com";
   const gravatarUrl = `https://www.gravatar.com/avatar/${md5(
     email
   )}?d=identicon`;
 
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [cameraVisible, setCameraVisible] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === "granted");
-    })();
-  }, []);
-
   const weather = {
     location: "New York",
     temperature: 24,
     condition: "Sunny",
+    icon: "sunny", // Placeholder for weather icon
   };
 
   const reports = [
     { id: 1, title: "Report 1", description: "Details of report 1" },
+    { id: 2, title: "Report 2", description: "Details of report 2" },
+    { id: 3, title: "Report 3", description: "Details of report 3" },
   ];
 
   const news = [
@@ -61,87 +52,77 @@ export default function HomeScreen() {
       description: "Description of article 3",
       image: "https://via.placeholder.com/300x200",
     },
+    // Add more news items as needed
   ];
-
-  if (hasPermission === null) {
-    return <Text>Requesting camera permission...</Text>;
-  }
-  if (hasPermission === false) {
-    return <Text>No access to camera</Text>;
-  }
-  console.log("Camera:", Camera);
-  console.log("Ionicons:", Ionicons);
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Welcome Mukilan !!</Text>
-        <View style={styles.headerIcons}>
-          <Image source={{ uri: gravatarUrl }} style={styles.profileImage} />
-        </View>
+        <Text style={styles.headerTitle}>
+          {t("welcome", { name: "Mukilan" })}
+        </Text>
+        <Image source={{ uri: gravatarUrl }} style={styles.profileImage} />
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.horizontalScroll}
-      >
-        <View style={[styles.card, styles.weatherCard]}>
-          <Text style={styles.cardTitle}>🌤️ Weather</Text>
-          <Text style={styles.weatherText}>📍 {weather.location}</Text>
-          <Text style={styles.weatherDetails}>
-            {weather.temperature}°C - {weather.condition}
-          </Text>
-        </View>
-
-        {reports.map((report) => (
-          <View key={report.id} style={[styles.card, styles.reportsCard]}>
-            <Text style={styles.cardTitle}>📊 {report.title}</Text>
-            <Text style={styles.reportDescription}>{report.description}</Text>
-          </View>
-        ))}
-      </ScrollView>
-
-      <View style={styles.newsSection}>
-        <Text style={styles.newsTitle}>📰 News</Text>
-        <FlatList
-          data={news}
-          horizontal
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.newsCard}>
-              <Image source={{ uri: item.image }} style={styles.newsImage} />
-              <Text style={styles.newsCardTitle}>{item.title}</Text>
-              <Text style={styles.newsCardDescription}>{item.description}</Text>
+      {/* Main Content */}
+      <ScrollView contentContainerStyle={styles.mainContent}>
+        {/* Weather and Reports */}
+        <View style={styles.topSection}>
+          {/* Weather Card */}
+          <View style={[styles.card, styles.weatherCard]}>
+            <View style={styles.cardHeader}>
+              {/* Replace with actual weather icon if available */}
+              <Text style={styles.cardTitle}>{t("weather")}</Text>
             </View>
-          )}
-          showsHorizontalScrollIndicator={false}
-          pagingEnabled
-        />
-      </View>
+            <Text style={styles.weatherLocation}>{weather.location}</Text>
+            <Text style={styles.weatherDetails}>
+              {t("temperature", {
+                temp: weather.temperature,
+                condition: weather.condition,
+              })}
+            </Text>
+          </View>
 
-      <Modal visible={cameraVisible} animationType="slide">
-        <View style={styles.cameraContainer}>
-          {Camera && hasPermission ? (
-            <Camera style={styles.camera} />
-          ) : (
-            <Text>Camera not available</Text>
-          )}
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setCameraVisible(false)}
+          {/* Reports Cards */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.reportsScroll}
           >
-            <Ionicons name="close" size={32} color="#FFFFFF" />
-          </TouchableOpacity>
+            {reports.map((report) => (
+              <View key={report.id} style={[styles.card, styles.reportsCard]}>
+                <Text style={styles.reportTitle}>{report.title}</Text>
+                <Text style={styles.reportDescription}>
+                  {report.description}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
         </View>
-      </Modal>
 
-      <TouchableOpacity
-        style={styles.cameraButton}
-        onPress={() => setCameraVisible(true)}
-      >
-        <Ionicons name="camera" size={64} color="#FFFFFF" />
-      </TouchableOpacity>
+        {/* News Section */}
+        <View style={styles.newsSection}>
+          <Text style={styles.newsTitle}>{t("news")}</Text>
+          <FlatList
+            data={news}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.newsCard}>
+                <Image source={{ uri: item.image }} style={styles.newsImage} />
+                <View style={styles.newsContent}>
+                  <Text style={styles.newsCardTitle}>{item.title}</Text>
+                  <Text style={styles.newsCardDescription}>
+                    {item.description}
+                  </Text>
+                </View>
+              </View>
+            )}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -157,129 +138,116 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     backgroundColor: "#1E88E5",
+    elevation: 4,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#FFFFFF",
   },
-  headerIcons: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
   profileImage: {
     width: 40,
     height: 40,
     borderRadius: 20,
   },
-  horizontalScroll: {
-    paddingHorizontal: 16,
-    marginBottom: 20,
+  mainContent: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  topSection: {
+    marginBottom: 24,
   },
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    marginTop: 20,
-    padding: 12,
-    height: 120,
-    width: 200,
+    padding: 16,
     marginRight: 16,
     shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 6,
+    elevation: 3,
   },
   weatherCard: {
+    flex: 1,
     backgroundColor: "#E3F2FD",
+    marginBottom: 16,
   },
-  reportsCard: {
-    backgroundColor: "#FFF8E1",
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 6,
+    fontSize: 18,
+    fontWeight: "600",
+    marginLeft: 8,
     color: "#1F2937",
   },
-  weatherText: {
-    fontSize: 14,
+  weatherLocation: {
+    fontSize: 16,
     color: "#1565C0",
     marginBottom: 4,
   },
   weatherDetails: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#555",
   },
+  reportsScroll: {
+    paddingVertical: 8,
+  },
+  reportsCard: {
+    width: width * 0.6,
+    backgroundColor: "#FFF8E1",
+  },
+  reportTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 6,
+  },
   reportDescription: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#616161",
   },
   newsSection: {
-    paddingHorizontal: 16,
-    marginBottom: 250,
+    flex: 1,
   },
   newsTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 12,
     color: "#1F2937",
   },
   newsCard: {
-    width: width - 32,
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     overflow: "hidden",
-    marginRight: 16,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 2,
   },
   newsImage: {
-    width: "100%",
-    height: 160,
+    width: 100,
+    height: 100,
     resizeMode: "cover",
+  },
+  newsContent: {
+    flex: 1,
+    padding: 12,
+    justifyContent: "center",
   },
   newsCardTitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    margin: 10,
+    fontWeight: "600",
     color: "#37474F",
+    marginBottom: 4,
   },
   newsCardDescription: {
-    fontSize: 12,
-    marginHorizontal: 10,
-    marginBottom: 10,
+    fontSize: 14,
     color: "#616161",
   },
-  cameraContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-  },
-  camera: {
-    width: "100%",
-    height: "100%",
-  },
-  closeButton: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    padding: 8,
-    borderRadius: 20,
-  },
-  cameraButton: {
-    position: "absolute",
-    bottom: 20,
-    alignSelf: "center",
-    backgroundColor: "#1E88E5",
-    borderRadius: 50,
-    padding: 16,
-    elevation: 5,
+  separator: {
+    height: 16,
   },
 });

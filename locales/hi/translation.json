@@ -1,0 +1,18 @@
+{
+    "welcome": "स्वागत है {{name}} !!",
+    "weather": "मौसम",
+    "location": "स्थान",
+    "temperature": "{{temp}}°C - {{condition}}",
+    "reports": "रिपोर्ट्स",
+    "news": "ताजा समाचार",
+    "switch_language": "भाषा बदलें",
+    "help_support": "सहायता और समर्थन",
+    "your_location": "आपका स्थान",
+    "city": "शहर",
+    "state": "राज्य",
+    "country": "देश",
+    "close": "बंद करें",
+    "language_switched": "भाषा बदल दी गई",
+    "current_language": "वर्तमान भाषा: {{language}}"
+  }
+  

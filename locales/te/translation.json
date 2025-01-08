@@ -1,0 +1,18 @@
+{
+    "welcome": "స్వాగతం {{name}} !!",
+    "weather": "వాతావరణం",
+    "location": "ప్రాంతం",
+    "temperature": "{{temp}}°C - {{condition}}",
+    "reports": "నివేదికలు",
+    "news": "తాజా వార్తలు",
+    "switch_language": "భాష మార్చండి",
+    "help_support": "సహాయం మరియు మద్దతు",
+    "your_location": "మీ ప్రాంతం",
+    "city": "నగరం",
+    "state": "రాష్ట్రం",
+    "country": "దేశం",
+    "close": "మూసివేయండి",
+    "language_switched": "భాష మార్చబడింది",
+    "current_language": "ప్రస్తుత భాష: {{language}}"
+  }
+  

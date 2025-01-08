@@ -1,0 +1,18 @@
+{
+    "welcome": "স্বাগতম {{name}} !!",
+    "weather": "আবহাওয়া",
+    "location": "অবস্থান",
+    "temperature": "{{temp}}°C - {{condition}}",
+    "reports": "রিপোর্টগুলি",
+    "news": "সর্বশেষ সংবাদ",
+    "switch_language": "ভাষা পরিবর্তন করুন",
+    "help_support": "সহায়তা এবং সমর্থন",
+    "your_location": "আপনার অবস্থান",
+    "city": "শহর",
+    "state": "রাষ্ট্র",
+    "country": "দেশ",
+    "close": "বন্ধ করুন",
+    "language_switched": "ভাষা পরিবর্তন হয়েছে",
+    "current_language": "বর্তমান ভাষা: {{language}}"
+  }
+  
