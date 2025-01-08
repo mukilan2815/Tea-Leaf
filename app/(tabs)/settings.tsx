@@ -32,14 +32,24 @@ const languages = [
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
-  const [location, setLocation] = useState(null);
+  const [location, setLocation] = useState<{
+    city: string;
+    region: string;
+    country: string;
+  } | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const switchLanguage = (languageCode) => {
+  interface Language {
+    code: string;
+    label: string;
+  }
+
+  const switchLanguage = (languageCode: string): void => {
     i18n.changeLanguage(languageCode);
     setCurrentLanguage(languageCode);
-    const selectedLanguage =
-      languages.find((lang) => lang.code === languageCode)?.label || "English";
+    const selectedLanguage: string =
+      languages.find((lang: Language) => lang.code === languageCode)?.label ||
+      "English";
     Alert.alert(
       t("language_switched"),
       `${t("current_language", { language: selectedLanguage })}`
@@ -62,7 +72,11 @@ export default function SettingsScreen() {
 
       if (reverseGeocode.length > 0) {
         const { city, region, country } = reverseGeocode[0];
-        setLocation({ city, region, country });
+        setLocation({
+          city: city || "",
+          region: region || "",
+          country: country || "",
+        });
       } else {
         Alert.alert(t("error"), t("unable_fetch_location"));
       }
@@ -95,11 +109,7 @@ export default function SettingsScreen() {
             mode="dropdown"
           >
             {languages.map((lang) => (
-              <Picker.Item
-                key={lang.code}
-                label={lang.label}
-                value={lang.code}
-              />
+              <Picker.Item label={lang.label} value={lang.code} />
             ))}
           </Picker>
         </View>

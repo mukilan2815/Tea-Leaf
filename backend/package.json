@@ -1,0 +1,18 @@
+{
+    "name": "tea-leaf-backend",
+    "version": "1.0.0",
+    "description": "Backend for Tea Leaf App",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2",
+        "gridfs-stream": "^1.1.1",
+        "mongoose": "^8.9.3",
+        "multer": "^1.4.4",
+        "multer-gridfs-storage": "^5.0.2"
+    }
+}
