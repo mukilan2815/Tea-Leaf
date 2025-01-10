@@ -1,30 +1,23 @@
-// models/User.js
-
 const mongoose = require("mongoose");
 
-const UserSchema = new mongoose.Schema(
-  {
-    phoneNumber: {
-      type: String,
-      required: true,
-    },
-    location: {
-      city: {
-        type: String,
-        required: true,
-      },
-      state: {
-        type: String,
-        required: true,
-      },
-      pincode: {
-        type: String,
-        required: true,
-      },
-    },
-    // Add other fields as necessary
+const userSchema = new mongoose.Schema({
+  phoneNumber: {
+    type: String,
+    required: true,
+    unique: true,
   },
-  { timestamps: true }
-);
+  otp: {
+    type: String,
+    required: true,
+  },
+  location: {
+    latitude: { type: Number },
+    longitude: { type: Number },
+  },
+  verified: {
+    type: Boolean,
+    default: false,
+  },
+});
 
-module.exports = mongoose.model("User", UserSchema);
+module.exports = mongoose.model("User", userSchema);

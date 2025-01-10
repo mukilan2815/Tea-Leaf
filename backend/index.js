@@ -1,32 +1,39 @@
-require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
+const dotenv = require("dotenv");
 const cors = require("cors");
+const authRoutes = require("./routes/authRoutes");
 const imageRoutes = require("./routes/imageRoutes");
 
+dotenv.config();
+
 const app = express();
+const PORT = process.env.PORT || 8000;
 
-app.use(cors({ origin: "*" })); // Allow all origins for simplicity
+// Middleware
+app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
-const mongoURI = process.env.MONGO_URI;
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+// Routes
+app.use("/auth", authRoutes);
+app.use("/image", imageRoutes);
+
+// Default Route
+app.get("/", (req, res) => {
+  res.send("Backend API is running");
 });
 
-mongoose.connection.on("connected", () => {
-  console.log("MongoDB connected");
-});
-
-mongoose.connection.on("error", (err) => {
-  console.error("MongoDB connection error:", err);
-});
-
-app.use("/api/images", imageRoutes);
-
-const PORT = process.env.PORT || 5000;
+// Start Server
 app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });

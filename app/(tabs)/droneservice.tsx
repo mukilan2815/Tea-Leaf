@@ -1,5 +1,3 @@
-// DroneServices.js
-
 import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
@@ -13,43 +11,61 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons"; // For icons
+import { useTranslation } from "react-i18next";
 
 export default function DroneServices() {
-  // State variables
   const [location, setLocation] = useState(null);
   const [address, setAddress] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [acreage, setAcreage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { t, i18n } = useTranslation();
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
 
-  // Fetch location on component mount
   useEffect(() => {
     fetchLocation();
   }, []);
+  // Supported languages
+  const languages = [
+    { code: "en", label: "English" },
+    { code: "hi", label: "हिन्दी" },
+    { code: "ta", label: "தமிழ்" },
+    { code: "te", label: "తెలుగు" },
+    { code: "bn", label: "বাংলা" },
+  ];
 
-  // Function to fetch location
+  const switchLanguage = (languageCode) => {
+    i18n.changeLanguage(languageCode); // Change language
+    setCurrentLanguage(languageCode);
+    const selectedLanguage =
+      languages.find((lang) => lang.code === languageCode)?.label || "English";
+    Alert.alert(
+      t("language_switched"),
+      t("current_language", { selectedLanguage })
+    );
+  };
+
   const fetchLocation = async () => {
     try {
-      // Request location permissions
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
           "Permission Denied",
-          "Permission to access location was denied."
+          "Permission to access location denied."
         );
         setLoading(false);
         return;
       }
 
-      // Get current location
       let loc = await Location.getCurrentPositionAsync({});
       setLocation(loc);
 
-      // Reverse geocode to get address
       const reverseGeocode = await Location.reverseGeocodeAsync({
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude,
@@ -57,13 +73,9 @@ export default function DroneServices() {
 
       if (reverseGeocode.length > 0) {
         const addr = reverseGeocode[0];
-        const formattedAddress = `${addr.name ? addr.name + ", " : ""}${
-          addr.street ? addr.street + ", " : ""
-        }${addr.city ? addr.city + ", " : ""}${
-          addr.region ? addr.region + ", " : ""
-        }${addr.postalCode ? addr.postalCode + ", " : ""}${
-          addr.country ? addr.country : ""
-        }`;
+        const formattedAddress = `${addr.name || ""}, ${addr.city || ""}, ${
+          addr.region || ""
+        }, ${addr.country || ""}`;
         setAddress(formattedAddress);
       }
 
@@ -76,9 +88,7 @@ export default function DroneServices() {
     }
   };
 
-  // Function to handle saving data
   const handleSave = async () => {
-    // Validate inputs
     if (!address.trim()) {
       Alert.alert("Validation Error", "Address cannot be empty.");
       return;
@@ -92,7 +102,6 @@ export default function DroneServices() {
     }
 
     setSaving(true);
-
     try {
       const droneData = {
         address: address.trim(),
@@ -102,7 +111,6 @@ export default function DroneServices() {
         timestamp: new Date().toISOString(),
       };
 
-      // Store data locally using AsyncStorage
       const existingData = await AsyncStorage.getItem("droneServiceData");
       let newData = [];
       if (existingData !== null) {
@@ -122,16 +130,10 @@ export default function DroneServices() {
     }
   };
 
-  // Function to handle modal cancellation
-  const handleCancel = () => {
-    setModalVisible(false);
-  };
-
-  // Render loading indicator
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1565C0" />
+        <ActivityIndicator size="large" color="#3A8E44" />
         <Text style={styles.loadingText}>Fetching location...</Text>
       </View>
     );
@@ -144,33 +146,35 @@ export default function DroneServices() {
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>🚁 Drone Services</Text>
+        <Text style={styles.headerTitle}>{t("drone_services")}</Text>
       </View>
 
       {/* Main Content */}
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Display fetched location */}
+        {/* Location Card */}
         {location && (
-          <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>Current Location:</Text>
-            <Text style={styles.infoText}>{address}</Text>
+          <View style={styles.card}>
+            <Ionicons name="location-outline" size={28} color="#3A8E44" />
+            <Text style={styles.cardTitle}>{t("current_location")}</Text>
+            <Text style={styles.cardText}>{address}</Text>
             <View style={styles.coordinates}>
               <Text style={styles.coordinateText}>
-                Latitude: {location.coords.latitude.toFixed(6)}
+                {t("latitude")}: {location.coords.latitude.toFixed(6)}
               </Text>
               <Text style={styles.coordinateText}>
-                Longitude: {location.coords.longitude.toFixed(6)}
+                {t("longitude")}: {location.coords.longitude.toFixed(6)}
               </Text>
             </View>
           </View>
         )}
 
-        {/* Input for Land Acreage */}
-        <View style={styles.inputBox}>
-          <Text style={styles.inputLabel}>Land Size (acres):</Text>
+        {/* Land Size Card */}
+        <View style={styles.card}>
+          <Ionicons name="analytics-outline" size={28} color="#3A8E44" />
+          <Text style={styles.cardTitle}>{t("land_size")}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Enter land size in acres"
+            placeholder={t("enter_land_size")}
             placeholderTextColor="#999"
             keyboardType="numeric"
             value={acreage}
@@ -183,71 +187,49 @@ export default function DroneServices() {
           style={styles.saveButton}
           onPress={() => setModalVisible(true)}
         >
-          <Text style={styles.saveButtonText}>Save Details</Text>
+          <Text style={styles.saveButtonText}>{t("save_details")}</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Address Confirmation Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => {
-          Alert.alert("Modal has been closed.");
-          setModalVisible(false);
-        }}
-      >
+      {/* Modal */}
+      <Modal animationType="slide" transparent visible={modalVisible}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <ScrollView>
-              <Text style={styles.modalTitle}>Confirm Your Details</Text>
+            <Text style={styles.modalTitle}>{t("confirm_details")}</Text>
 
-              <Text style={styles.modalLabel}>Address:</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={address}
-                onChangeText={setAddress}
-                multiline
-              />
+            {/* Address Input */}
+            <Text style={styles.modalLabel}>{t("address")}</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={address}
+              onChangeText={setAddress}
+              multiline
+            />
 
-              <Text style={styles.modalLabel}>Land Size (acres):</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={acreage}
-                onChangeText={setAcreage}
-                keyboardType="numeric"
-              />
+            {/* Acreage Input */}
+            <Text style={styles.modalLabel}>{t("land_size")}</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={acreage}
+              onChangeText={setAcreage}
+              keyboardType="numeric"
+            />
 
-              {/* Display Coordinates */}
-              <Text style={styles.modalLabel}>Coordinates:</Text>
-              <Text style={styles.modalCoordinate}>
-                Latitude: {location.coords.latitude.toFixed(6)}
-              </Text>
-              <Text style={styles.modalCoordinate}>
-                Longitude: {location.coords.longitude.toFixed(6)}
-              </Text>
-
-              {/* Buttons */}
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={handleCancel}
-                >
-                  <Text style={styles.modalButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalButton, styles.confirmButton]}
-                  onPress={handleSave}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.modalButtonText}>Save</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
+            {/* Modal Buttons */}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.modalButtonText}>{t("cancel")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleSave}
+              >
+                <Text style={styles.modalButtonText}>{t("save")}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -257,169 +239,135 @@ export default function DroneServices() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 40,
     flex: 1,
-    backgroundColor: "#F0F4F7",
+    paddingTop: 30,
+    backgroundColor: "#F5FAF0", // Light green for agricultural theme
   },
   header: {
-    backgroundColor: "#1565C0",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    backgroundColor: "#3A8E44",
+    paddingVertical: 30,
     alignItems: "center",
-    justifyContent: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 2 },
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    elevation: 5,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
+    fontSize: 26,
+    fontWeight: "700",
     color: "#FFFFFF",
   },
   content: {
     padding: 20,
   },
-  infoBox: {
+  card: {
     backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-    elevation: 2,
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 25,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  infoTitle: {
-    fontSize: 18,
+  cardTitle: {
+    fontSize: 20,
     fontWeight: "600",
-    marginBottom: 8,
-    color: "#333",
+    color: "#3A8E44",
+    marginBottom: 12,
   },
-  infoText: {
+  cardText: {
     fontSize: 16,
     color: "#555",
-    marginBottom: 8,
+    marginVertical: 8,
   },
   coordinates: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    marginTop: 10,
   },
   coordinateText: {
     fontSize: 14,
     color: "#777",
   },
-  inputBox: {
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    shadowOffset: { width: 0, height: 1 },
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 8,
-    color: "#333",
-  },
   input: {
     borderWidth: 1,
-    borderColor: "#CCC",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: "#E0E0E0",
+    borderRadius: 10,
+    padding: 15,
     fontSize: 16,
     color: "#333",
     backgroundColor: "#F9FAFB",
+    marginTop: 12,
   },
   saveButton: {
-    backgroundColor: "#1565C0",
-    paddingVertical: 14,
-    borderRadius: 12,
+    backgroundColor: "#3A8E44",
+    paddingVertical: 16,
+    borderRadius: 25,
     alignItems: "center",
-    elevation: 2,
-    shadowColor: "#1565C0",
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 2 },
+    marginTop: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   saveButtonText: {
     color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: "600",
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F0F4F7",
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#555",
+    fontWeight: "700",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     padding: 20,
   },
   modalContent: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 20,
-    maxHeight: "80%",
+    borderRadius: 15,
+    padding: 25,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 10,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
-    marginBottom: 16,
-    color: "#333",
-    textAlign: "center",
+    color: "#3A8E44",
+    marginBottom: 18,
   },
   modalLabel: {
     fontSize: 16,
-    fontWeight: "500",
-    marginTop: 12,
     color: "#333",
+    marginTop: 14,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: "#CCC",
-    borderRadius: 8,
-    padding: 12,
+    borderColor: "#E0E0E0",
+    borderRadius: 10,
+    padding: 14,
     fontSize: 16,
     color: "#333",
     backgroundColor: "#F9FAFB",
-    marginTop: 8,
-  },
-  modalCoordinate: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 4,
+    marginTop: 10,
   },
   modalButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 24,
+    marginTop: 20,
   },
   modalButton: {
     flex: 0.48,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
     alignItems: "center",
   },
   cancelButton: {
     backgroundColor: "#B0BEC5",
   },
   confirmButton: {
-    backgroundColor: "#1565C0",
+    backgroundColor: "#3A8E44",
   },
   modalButtonText: {
     color: "#FFFFFF",

@@ -1,5 +1,3 @@
-// SettingsScreen.js
-
 import React, { useState } from "react";
 import {
   StyleSheet,
@@ -9,50 +7,39 @@ import {
   Image,
   Alert,
   Modal,
-  Button,
-  Platform,
+  ScrollView,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker"; // Import Picker
-import md5 from "md5";
-import * as Location from "expo-location";
+import { Picker } from "@react-native-picker/picker";
+import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import * as Location from "expo-location";
 
-const email = "johndoe@example.com";
-const gravatarUrl = `https://www.gravatar.com/avatar/${md5(email)}?d=identicon`;
+// Gravatar URL
+const gravatarUrl = `https://www.pravatar.com/avatar/default?d=identicon`;
 
+// Supported languages
 const languages = [
   { code: "en", label: "English" },
   { code: "hi", label: "हिन्दी" },
   { code: "ta", label: "தமிழ்" },
   { code: "te", label: "తెలుగు" },
   { code: "bn", label: "বাংলা" },
-  // Add more languages as needed
 ];
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
-  const [location, setLocation] = useState<{
-    city: string;
-    region: string;
-    country: string;
-  } | null>(null);
+  const [location, setLocation] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  interface Language {
-    code: string;
-    label: string;
-  }
-
-  const switchLanguage = (languageCode: string): void => {
-    i18n.changeLanguage(languageCode);
+  const switchLanguage = (languageCode) => {
+    i18n.changeLanguage(languageCode); // Change language
     setCurrentLanguage(languageCode);
-    const selectedLanguage: string =
-      languages.find((lang: Language) => lang.code === languageCode)?.label ||
-      "English";
+    const selectedLanguage =
+      languages.find((lang) => lang.code === languageCode)?.label || "English";
     Alert.alert(
       t("language_switched"),
-      `${t("current_language", { language: selectedLanguage })}`
+      t("current_language", { selectedLanguage })
     );
   };
 
@@ -78,57 +65,61 @@ export default function SettingsScreen() {
           country: country || "",
         });
       } else {
-        Alert.alert(t("error"), t("unable_fetch_location"));
+        Alert.alert(t("error"), t("unable_to_fetch_location"));
       }
       setModalVisible(true);
     } catch (error) {
-      Alert.alert(t("error"), t("unable_fetch_location"));
+      Alert.alert(t("error"), t("unable_to_fetch_location"));
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* User Profile Section */}
-      <View style={styles.profileSection}>
-        <Image source={{ uri: gravatarUrl }} style={styles.profileImage} />
-        <View style={styles.profileDetails}>
-          <Text style={styles.profileName}>John Doe</Text>
-          <Text style={styles.profilePhone}>+1 234 567 890</Text>
-        </View>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{t("settings")}</Text>
       </View>
 
-      {/* Settings List */}
-      <View style={styles.settingsList}>
-        {/* Language Selection */}
-        <Text style={styles.sectionTitle}>{t("switch_language")}</Text>
-        <View style={styles.pickerContainer}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Language Selector */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t("switch_language")}</Text>
           <Picker
             selectedValue={currentLanguage}
-            onValueChange={(itemValue) => switchLanguage(itemValue)}
+            onValueChange={switchLanguage}
             style={styles.picker}
-            mode="dropdown"
           >
             {languages.map((lang) => (
-              <Picker.Item label={lang.label} value={lang.code} />
+              <Picker.Item
+                label={lang.label}
+                value={lang.code}
+                key={lang.code}
+              />
             ))}
           </Picker>
         </View>
 
-        {/* Other Settings Items */}
-        <TouchableOpacity style={styles.settingsItem} onPress={getLocation}>
-          <Text style={styles.itemText}>{t("location")}</Text>
-          <Text style={styles.itemArrow}>›</Text>
+        {/* Location */}
+        <TouchableOpacity style={styles.card} onPress={getLocation}>
+          <View style={styles.cardContent}>
+            <Ionicons name="location-outline" size={24} color="#3A8E44" />
+            <Text style={styles.cardText}>{t("location")}</Text>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </View>
         </TouchableOpacity>
+
+        {/* Help and Support */}
         <TouchableOpacity
-          style={styles.settingsItem}
-          onPress={() =>
-            Alert.alert(t("help_support"), "Help and Support clicked")
-          }
+          style={styles.card}
+          onPress={() => Alert.alert(t("help_support"), t("contact_us"))}
         >
-          <Text style={styles.itemText}>{t("help_support")}</Text>
-          <Text style={styles.itemArrow}>›</Text>
+          <View style={styles.cardContent}>
+            <Ionicons name="help-circle-outline" size={24} color="#3A8E44" />
+            <Text style={styles.cardText}>{t("help_support")}</Text>
+            <Ionicons name="chevron-forward" size={20} color="#999" />
+          </View>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
 
       {/* Location Modal */}
       <Modal animationType="slide" visible={modalVisible} transparent>
@@ -137,20 +128,23 @@ export default function SettingsScreen() {
             <Text style={styles.modalTitle}>{t("your_location")}</Text>
             {location ? (
               <>
-                <Text>
-                  {t("city")}: {location.city || t("unknown")}
-                </Text>
-                <Text>
-                  {t("state")}: {location.region || t("unknown")}
-                </Text>
-                <Text>
-                  {t("country")}: {location.country || t("unknown")}
-                </Text>
+                <Text>{`${t("city")}: ${location.city || t("unknown")}`}</Text>
+                <Text>{`${t("state")}: ${
+                  location.region || t("unknown")
+                }`}</Text>
+                <Text>{`${t("country")}: ${
+                  location.country || t("unknown")
+                }`}</Text>
               </>
             ) : (
-              <Text>{t("fetching_location")}</Text>
+              <Text>{t("unable_to_fetch_location")}</Text>
             )}
-            <Button title={t("close")} onPress={() => setModalVisible(false)} />
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>{t("close")}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -161,22 +155,36 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === "android" ? 30 : 50,
+    backgroundColor: "#F9FAFB",
+    paddingTop: 30,
   },
-  profileSection: {
+  header: {
+    backgroundColor: "#3A8E44",
+    padding: 16,
+    paddingTop: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  content: {
+    padding: 16,
+  },
+  profileCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
+    borderRadius: 12,
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
-    elevation: 2, // For Android
-    shadowColor: "#000", // For iOS
-    shadowOffset: { width: 0, height: 2 }, // For iOS
-    shadowOpacity: 0.1, // For iOS
-    shadowRadius: 4, // For iOS
+    marginBottom: 16,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   profileImage: {
     width: 70,
@@ -189,64 +197,50 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "600",
+    color: "#3A8E44",
   },
   profilePhone: {
     fontSize: 14,
     color: "#666",
     marginTop: 4,
   },
-  settingsList: {
+  card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    paddingVertical: 10,
-    elevation: 2, // For Android
-    shadowColor: "#000", // For iOS
-    shadowOffset: { width: 0, height: 2 }, // For iOS
-    shadowOpacity: 0.1, // For iOS
-    shadowRadius: 4, // For iOS
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  sectionTitle: {
-    fontSize: 18,
+  cardTitle: {
+    fontSize: 16,
     fontWeight: "600",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
     color: "#333",
+    marginBottom: 8,
   },
   pickerContainer: {
-    marginHorizontal: 16,
     borderWidth: 1,
     borderColor: "#E0E0E0",
     borderRadius: 8,
     overflow: "hidden",
-    marginBottom: 10,
   },
   picker: {
     height: 50,
     width: "100%",
   },
-  settingsItem: {
+  cardContent: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#E0E0E0",
   },
-  itemText: {
+  cardText: {
+    flex: 1,
     fontSize: 16,
+    marginLeft: 12,
     color: "#333",
-  },
-  itemArrow: {
-    fontSize: 18,
-    color: "#999",
-  },
-  separator: {
-    height: 1,
-    backgroundColor: "#E0E0E0",
-    marginHorizontal: 16,
   },
   modalContainer: {
     flex: 1,
@@ -255,20 +249,28 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    width: "80%",
+    width: "85%",
     backgroundColor: "#FFFFFF",
     padding: 20,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
-    elevation: 5, // For Android
-    shadowColor: "#000", // For iOS
-    shadowOffset: { width: 0, height: 2 }, // For iOS
-    shadowOpacity: 0.3, // For iOS
-    shadowRadius: 4, // For iOS
+    elevation: 5,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
+  },
+  closeButton: {
+    marginTop: 20,
+    backgroundColor: "#3A8E44",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
 });

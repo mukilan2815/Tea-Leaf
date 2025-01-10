@@ -1,5 +1,3 @@
-// RootLayout.js
-
 import React, { useEffect } from "react";
 import {
   DarkTheme,
@@ -38,11 +36,13 @@ export default function RootLayout() {
 
   return (
     <I18nextProvider i18n={i18n}>
-      {" "}
-      {/* Wrap the app with I18nextProvider */}
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
+        <Stack initialRouteName="login">
+          {/* Login Screen */}
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          {/* Tabs Layout */}
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          {/* Not Found Screen */}
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
