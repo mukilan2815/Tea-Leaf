@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 30,
-    backgroundColor: "#F5FAF0", // Light green for agricultural theme
+    backgroundColor: "#F5FAF0",
   },
   header: {
     backgroundColor: "#3A8E44",

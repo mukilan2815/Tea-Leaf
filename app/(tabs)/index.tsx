@@ -1,3 +1,5 @@
+// app/(tabs)/index.tsx
+
 import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
@@ -19,44 +21,144 @@ import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import { Picker } from "@react-native-picker/picker";
 import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons"; // Importing Ionicons for camera icon
+import { useRouter } from "expo-router"; // For navigation
 
 const { width } = Dimensions.get("window");
-const API_KEY = "9dac1789f6909ca2205c94277b32f8bd";
+const API_KEY = "9dac1789f6909ca2205c94277b32f8bd"; // Replace with your actual API key
+
+interface Diagnosis {
+  image: string; // Original image URI
+  processed_image: string; // Processed image URI (base64)
+  prediction: string;
+  remedy: string;
+  recommendation: {
+    name: string;
+    symptoms: string[];
+    control_methods: {
+      biological: string[];
+      chemical: string[];
+      mechanical: string[];
+    };
+  };
+  time: string;
+}
 
 export default function HomeScreen() {
-  const [weatherData, setWeatherData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [locationError, setLocationError] = useState("");
+  // State declarations
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [locationError, setLocationError] = useState<string>("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [newsImages, setNewsImages] = useState({
     firstImageError: false,
     secondImageError: false,
+    thirdImageError: false,
+    fourthImageError: false,
   });
-  const [predictedImage, setPredictedImage] = useState(null);
-  const [predictionText, setPredictionText] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [showOtpModal, setShowOtpModal] = useState(false);
-  const [showPhoneModal, setShowPhoneModal] = useState(true);
-  const [phoneNumber, setPhoneNumber] = useState("");
-  interface Diagnosis {
-    image: string;
-    prediction: string;
-    remedy: string;
-    time: string;
-  }
-
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [otp, setOtp] = useState<string>("");
+  const [showOtpModal, setShowOtpModal] = useState<boolean>(false);
+  const [showPhoneModal, setShowPhoneModal] = useState<boolean>(false);
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [recentDiagnoses, setRecentDiagnoses] = useState<Diagnosis[]>([]);
-  const [Name, setName] = useState("");
+  const [Name, setName] = useState<string>("");
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [selectedDiagnosis, setSelectedDiagnosis] = useState<Diagnosis | null>(
+    null
+  );
+  const [randomAvatar, setRandomAvatar] = useState<number>(
+    Math.floor(Math.random() * 70)
+  );
+
+  // Language options
+  const languages = [
+    { code: "en", label: "English" },
+    { code: "hi", label: "हिन्दी" },
+    { code: "ta", label: "தமிழ்" },
+    { code: "te", label: "తెలుగు" },
+    { code: "bn", label: "বাংলা" },
+  ];
+  const [currentLanguage, setCurrentLanguage] = useState<string>("en");
+
+  const { t, i18n } = useTranslation();
+  const router = useRouter();
+
   useEffect(() => {
     fetchWeatherData();
+    loadLanguagePreference();
   }, []);
+
+  useEffect(() => {
+    const checkStoredData = async () => {
+      try {
+        const storedName = await AsyncStorage.getItem("Name");
+        const storedPhoneNumber = await AsyncStorage.getItem("phoneNumber");
+        const isVerified = await AsyncStorage.getItem("isVerified");
+        if (!storedName || !storedPhoneNumber) {
+          setShowPhoneModal(true);
+        } else if (isVerified !== "true") {
+          setShowOtpModal(true);
+        } else {
+          setName(storedName);
+          setPhoneNumber(storedPhoneNumber);
+          setShowPhoneModal(false);
+          setShowOtpModal(false);
+        }
+      } catch (error) {
+        console.error("Error checking stored data:", error);
+        setShowPhoneModal(true);
+      }
+    };
+
+    checkStoredData();
+  }, []);
+
+  useEffect(() => {
+    const loadDiagnoses = async () => {
+      try {
+        const savedDiagnoses = await AsyncStorage.getItem("recentDiagnoses");
+        if (savedDiagnoses) {
+          setRecentDiagnoses(JSON.parse(savedDiagnoses));
+        }
+      } catch (error) {
+        console.error("Error loading diagnoses:", error);
+      }
+    };
+    loadDiagnoses();
+  }, []);
+
+  useEffect(() => {
+    const saveDiagnoses = async () => {
+      try {
+        await AsyncStorage.setItem(
+          "recentDiagnoses",
+          JSON.stringify(recentDiagnoses)
+        );
+      } catch (error) {
+        console.error("Error saving diagnoses:", error);
+      }
+    };
+    saveDiagnoses();
+  }, [recentDiagnoses]);
+
+  const loadLanguagePreference = async () => {
+    try {
+      const storedLanguage = await AsyncStorage.getItem("language");
+      if (storedLanguage) {
+        i18n.changeLanguage(storedLanguage);
+        setCurrentLanguage(storedLanguage);
+      }
+    } catch (error) {
+      console.error("Error loading language preference:", error);
+    }
+  };
 
   const fetchWeatherData = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setLocationError("Location permission denied.");
+        setLocationError(t("location_permission_denied"));
         setLoading(false);
         return;
       }
@@ -65,44 +167,72 @@ export default function HomeScreen() {
       const { latitude, longitude } = location.coords;
 
       const response = await axios.get(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&units=metric&appid=${API_KEY}`
+        `https://api.openweathermap.org/data/2.5/weather`,
+        {
+          params: {
+            lat: latitude,
+            lon: longitude,
+            units: "metric",
+            appid: API_KEY,
+          },
+        }
       );
 
       setWeatherData(response.data);
     } catch (error) {
-      setLocationError("Unable to fetch weather data.");
+      setLocationError(t("unable_to_fetch_weather"));
+      console.error("Weather fetch error:", error);
     } finally {
       setLoading(false);
     }
   };
+
   const handlePhoneSubmit = async () => {
     if (!phoneNumber || phoneNumber.length !== 10) {
-      Alert.alert("Invalid Phone Number", "Please enter a valid phone number.");
+      Alert.alert(
+        t("invalid_phone_number_title"),
+        t("invalid_phone_number_message")
+      );
       return;
     }
-
-    // Simulate OTP request
-    Alert.alert("OTP Sent", "An OTP has been sent to your phone.");
-    setShowPhoneModal(false);
-    setShowOtpModal(true);
+    try {
+      await AsyncStorage.setItem("Name", Name);
+      await AsyncStorage.setItem("phoneNumber", phoneNumber);
+      // Simulate OTP request
+      Alert.alert(t("otp_sent_title"), t("otp_sent_message"));
+      setShowPhoneModal(false);
+      setShowOtpModal(true);
+    } catch (error) {
+      console.error("Error saving user data:", error);
+      Alert.alert(t("error_title"), t("save_details_failed"));
+    }
   };
 
   const handleOtpSubmit = async () => {
     if (otp !== "1234") {
-      Alert.alert("Invalid OTP", "Please enter the correct OTP.");
+      // Replace with actual OTP verification logic
+      Alert.alert(t("invalid_otp_title"), t("invalid_otp_message"));
       return;
     }
 
-    Alert.alert("Success", "Welcome to the application!");
-    setShowOtpModal(false);
+    try {
+      // Store verification status
+      await AsyncStorage.setItem("isVerified", "true");
+      Alert.alert(t("success_title"), t("welcome_message"));
+      setShowOtpModal(false);
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      Alert.alert(t("error_title"), t("verify_otp_failed"));
+    }
   };
+
   const openCamera = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
-          "Permission Denied",
-          "Camera access is required to capture images."
+          t("permission_denied_title"),
+          t("camera_permission_required")
         );
         return;
       }
@@ -119,99 +249,114 @@ export default function HomeScreen() {
         setSelectedImage(image.uri); // Display selected image
         uploadImage(image); // Upload the captured image
       } else {
-        Alert.alert("No Image Selected", "Please capture an image to upload.");
+        Alert.alert(
+          t("no_image_selected_title"),
+          t("no_image_selected_message")
+        );
       }
     } catch (error) {
       console.error("Camera Error:", error);
-      Alert.alert("Error", "An error occurred while accessing the camera.");
+      Alert.alert(t("error_title"), t("camera_access_error"));
     }
   };
 
-  interface Image {
-    uri: string;
-  }
+  const switchLanguage = async (itemValue: string): Promise<void> => {
+    try {
+      await AsyncStorage.setItem("language", itemValue);
+      i18n.changeLanguage(itemValue); // Change language
+      setCurrentLanguage(itemValue);
+      Alert.alert(t("language_switched_title"), t("language_switched_message"));
+    } catch (error) {
+      console.error("Error saving language preference:", error);
+      Alert.alert(t("error_title"), t("switch_language_failed"));
+    }
+  };
 
-  interface Diagnosis {
-    image: string;
-    prediction: string;
-    remedy: string;
-    time: string;
-  }
-
-  const uploadImage = async (image: Image): Promise<void> => {
+  const uploadImage = async (
+    image: ImagePicker.ImagePickerAsset
+  ): Promise<void> => {
     try {
       setUploading(true);
-
       const formData = new FormData();
-      const localUri = image.uri;
-      const filename = localUri.split("/").pop() || "";
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image/jpeg`;
-
-      formData.append("file", { uri: localUri, name: filename, type: type });
-
-      const backendURL = "http://192.168.29.144:8000/predict/";
-      const response = await axios.post(backendURL, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        responseType: "blob", // Expect a binary blob (image) in the response
+      formData.append("file", {
+        uri: image.uri,
+        name: image.uri.split("/").pop() || "image.jpg",
+        type: "image/jpeg",
       });
 
+      const response = await axios.post(
+        "https://4512-152-58-249-139.ngrok-free.app/predict/", // Replace with your backend URL
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          validateStatus: (status) => status < 500, // Allow handling of 4xx responses
+        }
+      );
+
       if (response.status === 200) {
-        const blob = response.data;
+        console.log("Headers received:", response.headers);
+        const { prediction, remedy, recommendation, processed_image } =
+          response.data;
 
-        // Convert Blob to a Base64 URI
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64data = reader.result as string;
+        // Log the prediction, remedy, and recommendation for debugging
+        console.log("Prediction:", prediction);
+        console.log("Remedy:", remedy);
+        console.log("Recommendation:", recommendation);
+        console.log("Processed Image:", processed_image);
 
-          // Extract metadata from headers
-          const predictionHeader = response.headers["x-prediction"];
-          const remedyHeader = response.headers["x-remedy"];
+        if (!processed_image) {
+          console.warn("Processed image is missing in the response.");
+        }
 
-          // Create a new diagnosis object
-          const newDiagnosis: Diagnosis = {
-            image: base64data, // Base64 image
-            prediction: predictionHeader || "No prediction provided.",
-            remedy: remedyHeader || "No remedy provided.",
-            time: new Date().toLocaleString(),
-          };
+        // Convert base64 processed image back to a URI
+        const processedImageUri = processed_image
+          ? `data:image/jpeg;base64,${processed_image}`
+          : null;
 
-          // Update the recent diagnoses state
-          setRecentDiagnoses((prev) => [newDiagnosis, ...prev]);
+        // Create a new diagnosis object with all relevant data
+        const newDiagnosis: Diagnosis = {
+          image: image.uri,
+          processed_image: processedImageUri || "",
+          prediction: prediction || t("no_prediction"),
+          remedy: remedy || t("no_remedy"),
+          recommendation: recommendation || {
+            name: t("no_recommendation_available"),
+            symptoms: [],
+            control_methods: { biological: [], chemical: [], mechanical: [] },
+          },
+          time: new Date().toLocaleString(),
         };
-        reader.readAsDataURL(blob);
-        console.log(response.headers);
-        Alert.alert("Success", "Prediction received!");
+
+        // Update the recent diagnoses state
+        setRecentDiagnoses((prev) => [newDiagnosis, ...prev]);
+        Alert.alert(t("success_title"), t("prediction_received"));
+      } else if (response.status === 204) {
+        Alert.alert(t("no_prediction_title"), t("no_prediction_message"));
       } else {
-        Alert.alert("Error", `Upload failed with status: ${response.status}`);
+        // Handle other response statuses (e.g., 400 Bad Request)
+        const errorMessage = response.data?.message || t("unknown_error");
+        Alert.alert("Error", errorMessage);
       }
-    } catch (error) {
-      console.error("Upload Error:", error);
-      Alert.alert("Error", "An error occurred while uploading the image.");
+    } catch (error: any) {
+      console.error(
+        "Error uploading image:",
+        error.response?.data || error.message
+      );
+      Alert.alert(
+        "Error",
+        `${t("upload_error")}: ${error.message || t("unknown_error")}`
+      );
     } finally {
       setUploading(false);
     }
   };
 
-  useEffect(() => {
-    const loadDiagnoses = async () => {
-      const savedDiagnoses = await AsyncStorage.getItem("recentDiagnoses");
-      if (savedDiagnoses) {
-        setRecentDiagnoses(JSON.parse(savedDiagnoses));
-      }
-    };
-    loadDiagnoses();
-  }, []);
-
-  useEffect(() => {
-    AsyncStorage.setItem("recentDiagnoses", JSON.stringify(recentDiagnoses));
-  }, [recentDiagnoses]);
-
-  useEffect(() => {
-    AsyncStorage.setItem("recentDiagnoses", JSON.stringify(recentDiagnoses));
-  }, [recentDiagnoses]);
+  const handleDiagnosisClick = (diagnosis: Diagnosis) => {
+    setSelectedDiagnosis(diagnosis);
+    setIsModalVisible(true);
+  };
 
   const renderWeatherCard = () => {
     if (loading) {
@@ -238,26 +383,14 @@ export default function HomeScreen() {
 
     return null;
   };
-  const languages = [
-    { code: "en", label: "English" },
-    { code: "hi", label: "हिन्दी" },
-    { code: "ta", label: "தமிழ்" },
-    { code: "te", label: "తెలుగు" },
-    { code: "bn", label: "বাংলা" },
+
+  // Predefined fake images for news carousel
+  const fakeNewsImages = [
+    "https://picsum.photos/300/200?random=1",
+    "https://picsum.photos/300/200?random=2",
+    "https://picsum.photos/300/200?random=3",
+    "https://picsum.photos/300/200?random=4",
   ];
-  const [currentLanguage, setCurrentLanguage] = useState("en");
-
-  interface Language {
-    code: string;
-    label: string;
-  }
-  const { t, i18n } = useTranslation();
-
-  const switchLanguage = (itemValue: string, languageCode: string): void => {
-    i18n.changeLanguage(languageCode); // Change language
-    setCurrentLanguage(itemValue);
-    Alert.alert("Language Switched", `Current language: ${itemValue}`);
-  };
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
@@ -266,13 +399,11 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>{t("welcome_back")} 👋</Text>
-            <Text style={styles.headerSubtitle}>Mukilan T</Text>
+            <Text style={styles.headerSubtitle}>{Name || t("user")}</Text>
           </View>
           <Image
             source={{
-              uri: `https://i.pravatar.cc/150?img=${Math.floor(
-                Math.random() * 70
-              )}`,
+              uri: `https://i.pravatar.cc/150?img=${randomAvatar}`,
             }}
             style={styles.profileImage}
           />
@@ -285,48 +416,26 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.carouselContainer}
         >
-          <View style={styles.newsCard}>
-            <Image
-              source={
-                newsImages.firstImageError
-                  ? { uri: "https://via.placeholder.com/300x200" }
-                  : { uri: "https://source.unsplash.com/random/300x200/?farm" }
-              }
-              style={styles.newsImage}
-              onError={() =>
-                setNewsImages((prevState) => ({
-                  ...prevState,
-                  firstImageError: true,
-                }))
-              }
-            />
-            <Text style={styles.newsTitle}>{t("news_tea_leaf_diseases")}</Text>
-            <Text style={styles.newsSubtitle}>
-              {t("news_ai_tea_diseases_description")}
-            </Text>
-          </View>
-          <View style={styles.newsCard}>
-            <Image
-              source={
-                newsImages.secondImageError
-                  ? { uri: "https://via.placeholder.com/300x200" }
-                  : {
-                      uri: "https://source.unsplash.com/random/300x200/?plants",
-                    }
-              }
-              style={styles.newsImage}
-              onError={() =>
-                setNewsImages((prevState) => ({
-                  ...prevState,
-                  secondImageError: true,
-                }))
-              }
-            />
-            <Text style={styles.newsTitle}>{t("news_crop_health")}</Text>
-            <Text style={styles.newsSubtitle}>
-              {t("news_crop_health_description")}
-            </Text>
-          </View>
+          {fakeNewsImages.map((uri, index) => (
+            <View style={styles.newsCard} key={index}>
+              <Image
+                source={{ uri }}
+                style={styles.newsImage}
+                onError={() =>
+                  setNewsImages((prevState) => ({
+                    ...prevState,
+                    [`image${index}`]: true,
+                  }))
+                }
+              />
+              <Text style={styles.newsTitle}>
+                {t(`news_title_${index + 1}`)}
+              </Text>
+              <Text style={styles.newsSubtitle}>
+                {t(`news_description_${index + 1}`)}
+              </Text>
+            </View>
+          ))}
         </ScrollView>
 
         {/* Scan Card */}
@@ -338,47 +447,132 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Recent Diagnoses Section */}
+        {/* Recent Diagnoses */}
         <View style={styles.recentDiagnoses}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("recent_diagnoses")}</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>{t("see_all")}</Text>
-            </TouchableOpacity>
+            {recentDiagnoses.length > 3 && (
+              <TouchableOpacity
+                onPress={() => router.push("/diagnoses/AllDiagnoses")}
+              >
+                <Text style={styles.seeAllText}>{t("see_all")}</Text>
+              </TouchableOpacity>
+            )}
           </View>
           {recentDiagnoses.length === 0 ? (
-            <Text style={{ color: "#666", fontStyle: "italic" }}>
-              {t("no_diagnoses_yet")}
-            </Text>
+            <Text style={styles.noDiagnosesText}>{t("no_diagnoses_yet")}</Text>
           ) : (
-            recentDiagnoses.map((diagnosis, index) => (
-              <View key={index} style={styles.diagnosisItem}>
-                {/* Predicted Image */}
-                <Image
-                  source={{ uri: diagnosis.image }}
-                  style={{
-                    width: 100,
-                    height: 100,
-                    borderRadius: 8,
-                    marginRight: 10,
-                  }}
-                />
-                {/* Prediction Details */}
-                <View>
-                  <Text style={styles.diagnosisText}>
-                    {diagnosis.prediction}
-                  </Text>
-                  <Text style={styles.remedyText}>{diagnosis.remedy}</Text>
-                  <Text style={styles.diagnosisDate}>{diagnosis.time}</Text>
+            recentDiagnoses.slice(0, 3).map((diagnosis, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => handleDiagnosisClick(diagnosis)}
+              >
+                <View style={styles.diagnosisCard}>
+                  {/* Predicted Image */}
+                  <Image
+                    source={{ uri: diagnosis.processed_image }}
+                    style={styles.diagnosisImage}
+                    onError={(e) =>
+                      console.error(
+                        "Image failed to load:",
+                        e.nativeEvent.error
+                      )
+                    }
+                    onLoad={() => console.log("Image loaded successfully")}
+                  />
+                  {/* Prediction Details */}
+                  <View style={styles.diagnosisDetails}>
+                    <Text style={styles.diagnosisPrediction}>
+                      {diagnosis.prediction}
+                    </Text>
+                    <Text style={styles.diagnosisRemedy}>
+                      {diagnosis.remedy}
+                    </Text>
+                    <Text style={styles.diagnosisTime}>{diagnosis.time}</Text>
+                  </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))
           )}
+
+          {/* Modal to Show Diagnosis Details */}
+          <Modal
+            visible={isModalVisible}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setIsModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                {selectedDiagnosis && (
+                  <>
+                    {/* Predicted Image */}
+                    <Image
+                      source={{ uri: selectedDiagnosis.processed_image }}
+                      style={styles.modalImage}
+                      onError={(e) =>
+                        console.error(
+                          "Image failed to load:",
+                          e.nativeEvent.error
+                        )
+                      }
+                      onLoad={() => console.log("Image loaded successfully")}
+                    />
+                    {/* Prediction Details */}
+                    <Text style={styles.modalTitle}>
+                      {selectedDiagnosis.prediction}
+                    </Text>
+
+                    {/* Scrollable Text Content */}
+                    <ScrollView
+                      style={styles.modalTextContainer}
+                      contentContainerStyle={styles.scrollViewContent}
+                    >
+                      {/* Remedy Details */}
+                      <Text style={styles.modalText}>
+                        {t("remedy")}: {selectedDiagnosis.remedy}
+                      </Text>
+                      {/* Recommendation Details */}
+                      <Text style={styles.modalText}>
+                        {t("recommendation_name")}:{" "}
+                        {selectedDiagnosis.recommendation.name}
+                      </Text>
+                      <Text style={styles.modalText}>
+                        {t("symptoms")}:{" "}
+                        {selectedDiagnosis.recommendation.symptoms.join(", ")}
+                      </Text>
+                      <Text style={styles.modalText}>
+                        {t("control_methods")}:{"\n"}Biological:{" "}
+                        {selectedDiagnosis.recommendation.control_methods.biological.join(
+                          ", "
+                        )}
+                        {"\n"}Chemical:{" "}
+                        {selectedDiagnosis.recommendation.control_methods.chemical.join(
+                          ", "
+                        )}
+                        {"\n"}Mechanical:{" "}
+                        {selectedDiagnosis.recommendation.control_methods.mechanical.join(
+                          ", "
+                        )}
+                      </Text>
+                    </ScrollView>
+                  </>
+                )}
+                {/* Close Button */}
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setIsModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>{t("close")}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
         </View>
       </ScrollView>
 
       {/* Phone Details Modal */}
-      <Modal visible={showPhoneModal} transparent={true}>
+      <Modal visible={showPhoneModal} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t("enter_details")}</Text>
@@ -426,7 +620,7 @@ export default function HomeScreen() {
       </Modal>
 
       {/* OTP Modal */}
-      <Modal visible={showOtpModal} transparent={true}>
+      <Modal visible={showOtpModal} transparent={true} animationType="slide">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t("enter_otp")}</Text>
@@ -447,271 +641,296 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Large Camera Button */}
+      {/* Large Camera Icon Button */}
       <View style={styles.cameraButtonContainer}>
         <TouchableOpacity style={styles.largeCameraButton} onPress={openCamera}>
-          <Text style={styles.largeCameraButtonText}>{t("open_camera")}</Text>
+          <Ionicons name="camera" size={40} color="#fff" />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
+// Stylesheet
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 40,
     flex: 1,
-    backgroundColor: "#E7F5DC",
+    backgroundColor: "#fff",
   },
   mainContent: {
-    padding: 16,
-  },
-  errorText: {
-    fontSize: 16,
-    color: "#FF0000",
+    padding: 20,
+    paddingBottom: 100, // To avoid overlap with the camera button
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 20,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#3A8E44",
+    fontSize: 24,
+    fontWeight: "bold",
   },
   headerSubtitle: {
     fontSize: 16,
     color: "#666",
   },
-
   profileImage: {
     width: 50,
     height: 50,
     borderRadius: 25,
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  modalContent: {
-    width: "80%",
-    backgroundColor: "#FFFFFF",
-    padding: 20,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 16,
-  },
-  modalInput: {
-    width: "100%",
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#CCCCCC",
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  modalButton: {
-    backgroundColor: "#3A8E44",
-    padding: 10,
-    borderRadius: 8,
-    width: "100%",
-    alignItems: "center",
-  },
-  modalButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
   weatherCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: "#f0f8ff",
+    padding: 15,
+    borderRadius: 10,
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 20,
   },
   weatherLocation: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "600",
-    color: "#3A8E44",
   },
   weatherTemperature: {
-    fontSize: 48,
-    fontWeight: "700",
-    color: "#3A8E44",
+    fontSize: 32,
+    fontWeight: "bold",
+    marginVertical: 5,
   },
   weatherDescription: {
     fontSize: 16,
-    color: "#666",
+    color: "#555",
+  },
+  carouselContainer: {
+    paddingVertical: 10,
   },
   newsCard: {
-    width: 280, // Adjust card width to be more compact
-    marginRight: 16, // Spacing between cards
-    marginBottom: 24,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12, // Slightly reduced padding for a more spacious look
-    shadowColor: "#000", // Optional: adds a shadow effect for depth
-    shadowOffset: { width: 0, height: 4 },
+    width: width * 0.7,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    marginRight: 15,
+    overflow: "hidden",
+    elevation: 3,
+    shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3, // For Android shadow
-    alignItems: "center", // Center the content inside the card
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
-
   newsImage: {
     width: "100%",
     height: 150,
-    borderRadius: 12,
-    marginBottom: 12, // Space between image and text
+    resizeMode: "cover",
   },
-
   newsTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#3A8E44",
-    marginBottom: 8, // Adds a gap between title and subtitle
-    textAlign: "center", // Center the title for a balanced look
+    fontWeight: "bold",
+    margin: 10,
+    color: "#333",
   },
-
   newsSubtitle: {
     fontSize: 14,
     color: "#666",
-    textAlign: "center", // Center the subtitle as well
+    marginHorizontal: 10,
+    marginBottom: 10,
   },
   scanCard: {
-    width: 320, // Compact width for advertisement banner
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+    backgroundColor: "#e6ffe6",
+    padding: 20,
+    borderRadius: 10,
     alignItems: "center",
-    shadowColor: "#000", // Adds depth
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3, // Android shadow
+    marginBottom: 20,
   },
-
   scanTitle: {
-    fontSize: 16, // Slightly smaller font for the title
-    fontWeight: "600",
-    color: "#3A8E44",
-    marginBottom: 8,
-    textAlign: "center", // Centers the title for a balanced look
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "#333",
   },
-
   scanSubtitle: {
-    fontSize: 12, // Reduced font size for a more compact appearance
-    color: "#666",
-    marginBottom: 16,
-    textAlign: "center", // Center subtitle
+    fontSize: 14,
+    color: "#555",
+    textAlign: "center",
+    marginBottom: 15,
   },
-
   scanButton: {
     backgroundColor: "#3A8E44",
-    paddingVertical: 10, // Slightly smaller padding for a compact button
-    paddingHorizontal: 24,
-    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
   },
-
   scanButtonText: {
-    fontSize: 14, // Smaller font size for the button text
-    fontWeight: "600",
-    color: "#FFFFFF",
+    color: "#fff",
+    fontSize: 16,
   },
   recentDiagnoses: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#3A8E44",
+    fontWeight: "bold",
+    color: "#333",
   },
   seeAllText: {
-    marginLeft: -10,
     fontSize: 14,
     color: "#3A8E44",
   },
-  diagnosisItem: {
+  diagnosisCard: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
+    alignItems: "center",
+    padding: 10,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 8,
+    elevation: 3, // for Android shadow
+    shadowColor: "#000", // for iOS shadow
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+    marginBottom: 15,
   },
-  diagnosisText: {
+  diagnosisImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    marginRight: 15,
+    resizeMode: "cover",
+  },
+  diagnosisDetails: {
+    flex: 1,
+  },
+  diagnosisPrediction: {
+    fontWeight: "bold",
     fontSize: 16,
-    color: "#37474F",
+    marginBottom: 5,
+    color: "#333",
   },
-  diagnosisDate: {
+  diagnosisRemedy: {
+    color: "#888",
+    marginBottom: 5,
     fontSize: 14,
-    color: "#666",
   },
-  cameraButtonContainer: {
-    position: "absolute",
-    bottom: 20,
-    left: 0,
-    right: 0,
+  diagnosisTime: {
+    fontSize: 12,
+    color: "#aaa",
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)", // Semi-transparent background
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalContent: {
+    width: "100%",
+    maxHeight: "80%", // Limit the height to 80% of the screen
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
     alignItems: "center",
   },
-  largeCameraButton: {
-    backgroundColor: "#3A8E44",
-    paddingVertical: 16,
-    paddingHorizontal: 48,
-    borderRadius: 32,
-    elevation: 5,
+  modalImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 15,
+    resizeMode: "contain",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 15,
+    textAlign: "center",
+    color: "#333",
+  },
+  modalTextContainer: {
+    flex: 1, // Take up remaining space
+    width: "100%",
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 10,
+    textAlign: "left",
+    lineHeight: 22, // Improve readability for long texts
+    color: "#333",
+  },
+  closeButton: {
+    backgroundColor: "#ff4d4d",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginTop: 15,
+    width: "100%",
+    alignItems: "center",
+  },
+  closeButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  scrollViewContent: {
+    paddingBottom: 20, // Ensure space at the bottom
   },
   card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    width: "100%",
+    marginVertical: 10,
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
+    marginBottom: 5,
     color: "#333",
-    marginBottom: 8,
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: "#E0E0E0",
-    borderRadius: 8,
-    overflow: "hidden",
+    borderColor: "#ccc",
+    borderRadius: 5,
   },
   picker: {
-    height: 50,
-    minWidth: "100%",
     width: "100%",
+    height: 50,
   },
-
-  largeCameraButtonText: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#FFFFFF",
+  errorText: {
+    color: "red",
+    textAlign: "center",
+    marginBottom: 20,
+    fontSize: 16,
+  },
+  noDiagnosesText: {
+    color: "#666",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginTop: 50,
+    fontSize: 16,
+  },
+  cameraButtonContainer: {
+    position: "absolute",
+    bottom: 30,
+    alignSelf: "center",
+  },
+  largeCameraButton: {
+    backgroundColor: "#3A8E44",
+    padding: 20,
+    borderRadius: 60,
+    elevation: 5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalButton: {
+    backgroundColor: "#3A8E44",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginTop: 15,
+    width: "100%",
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
